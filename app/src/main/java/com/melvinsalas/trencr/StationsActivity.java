@@ -1,11 +1,14 @@
 package com.melvinsalas.trencr;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import org.apache.http.HttpEntity;
@@ -27,6 +30,8 @@ public class StationsActivity extends AppCompatActivity {
     private String mJson;
     private String mName;
     private ListViewAdapter mListViewAdapter;
+    private String mJsonString;
+    private String jsonString;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,13 +57,27 @@ public class StationsActivity extends AppCompatActivity {
         // JSON
         JSONParse jsonParse = new JSONParse();
         jsonParse.execute();
+
+        clickListener();
+    }
+
+    private void clickListener() {
+        getListStation().setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Intent intent = new Intent(StationsActivity.this, ScheduleActivity.class);
+                intent.putExtra("JSON", getJsonString());
+                intent.putExtra("NAME", getName());
+                intent.putExtra("POSITION", position);
+                startActivityForResult(intent, 0);
+            }
+        });
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                // API 5+ solution
                 onBackPressed();
                 return true;
 
@@ -81,6 +100,14 @@ public class StationsActivity extends AppCompatActivity {
 
     public void setName(String mName) {
         this.mName = mName;
+    }
+
+    public void setJsonString(String jsonString) {
+        this.jsonString = jsonString;
+    }
+
+    public String getJsonString() {
+        return jsonString;
     }
 
     private class JSONParse extends AsyncTask<String, String, String> {
@@ -114,6 +141,7 @@ public class StationsActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String json) {
             try {
+                setJsonString(json);
                 StationManager stationManager = new StationManager();
                 JSONObject routes = new JSONObject(json);
                 JSONArray routesArray = routes.optJSONArray("stations");

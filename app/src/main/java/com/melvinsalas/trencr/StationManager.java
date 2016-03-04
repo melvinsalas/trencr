@@ -6,7 +6,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 /**
- * Created by msalas on 2/29/2016.
+ * Created by Melvin Salas on FEB/29/2016.
  */
 public class StationManager {
     private ArrayList<Station> mStations;
@@ -24,5 +24,13 @@ public class StationManager {
 
     public ArrayList<Station> getStations() {
         return mStations;
+    }
+
+    public int getCount() {
+        return mStations.size();
+    }
+
+    public String getName(int position) {
+        return mStations.get(position).getName();
     }
 }

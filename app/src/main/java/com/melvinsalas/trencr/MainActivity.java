@@ -194,8 +194,13 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void showCloudMessage(boolean show) {
-        getCloudMessage().setVisibility(View.VISIBLE);
-        getRoutesList().setVisibility(View.GONE);
+        if(show) {
+            getCloudMessage().setVisibility(View.VISIBLE);
+            getRoutesList().setVisibility(View.GONE);
+        } else {
+            getCloudMessage().setVisibility(View.GONE);
+            getRoutesList().setVisibility(View.VISIBLE);
+        }
     }
 
     private void UpdateUI(RouteManager routeManager) {

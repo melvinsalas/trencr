@@ -1,8 +1,6 @@
 package com.melvinsalas.trencr;
 
 import android.support.design.widget.TabLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -17,147 +15,182 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 
-import android.widget.TextView;
+import android.widget.ListView;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 
 public class ScheduleActivity extends AppCompatActivity {
 
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
-    private SectionsPagerAdapter mSectionsPagerAdapter;
+    // =============================================================================================
+    // VARIABLES
+    // =============================================================================================
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
+    private SectionsPagerAdapter mSectionsPagerAdapter;
     private ViewPager mViewPager;
+    private String mJson, mName;
+    private int mPosition;
+    private StationManager mStationManager;
+
+    // =============================================================================================
+    // SCHEDULE
+    // =============================================================================================
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // CONSTRUCTOR
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_schedule);
 
+        // TOOLBAR
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        // Create the adapter that will return a fragment for each of the three
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        if(getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
 
-        // Set up the ViewPager with the sections adapter.
+        // BUNDLE
+        Bundle bundle = getIntent().getExtras();
+        if (bundle != null) {
+            setJson(bundle.getString("JSON"));
+            setName(bundle.getString("NAME"));
+            setPosition(bundle.getInt("POSITION"));
+        }
+
+        // PAGE ADAPTER
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getJson());
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
-
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_schedule, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
+    // =============================================================================================
+    // PLACEHOLDER FRAGMENT
+    // =============================================================================================
+
     public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
+
         private static final String ARG_SECTION_NUMBER = "section_number";
+        private static final String ARG_SECTION_JSON = "section_json";
+        private StationManager mStationManager;
 
-        public PlaceholderFragment() {
-        }
-
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
+        public static PlaceholderFragment newInstance(int sectionNumber, String sectionJson) {
             PlaceholderFragment fragment = new PlaceholderFragment();
             Bundle args = new Bundle();
             args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+            args.putString(ARG_SECTION_JSON, sectionJson);
             fragment.setArguments(args);
             return fragment;
         }
 
         @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
+        public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_schedule, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
+
+            mStationManager = new StationManager();
+
+            // STATION MANAGER
+            try {
+                JSONObject routes = new JSONObject(getArguments().getString(ARG_SECTION_JSON));
+                JSONArray routesArray = routes.optJSONArray("stations");
+                for (int i = 0; i < routesArray.length(); i++) {
+                    mStationManager.addStation(routesArray.getJSONObject(i));
+                }
+            } catch (Exception e) {
+
+            }
+
+            int position = getArguments().getInt(ARG_SECTION_NUMBER) - 1;
+
+            ListView listView = (ListView) rootView.findViewById(R.id.time_list);
+
+            //ArrayList<String> data = mStationManager.getStations().get(position).getListHour();
+            //mListViewAdapter = new ListViewAdapter(this, data);
+            //getRoutesList().setAdapter(mListViewAdapter);
             return rootView;
         }
     }
 
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
+    // =============================================================================================
+    // SECTION PAGER ADAPTER
+    // =============================================================================================
+
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
+        private String mJson;
+
+        public SectionsPagerAdapter(FragmentManager fragmentManager, String json) {
+            super(fragmentManager);
+            mJson = json;
         }
 
         @Override
         public Fragment getItem(int position) {
-            // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+            return PlaceholderFragment.newInstance(position + 1, mJson);
         }
 
         @Override
         public int getCount() {
-            // Show 3 total pages.
-            return 3;
+            return getStationManager().getCount();
         }
 
         @Override
         public CharSequence getPageTitle(int position) {
-            switch (position) {
-                case 0:
-                    return "SECTION 1";
-                case 1:
-                    return "SECTION 2";
-                case 2:
-                    return "SECTION 3";
-            }
-            return null;
+            return getStationManager().getName(position);
         }
+    }
+
+    // =============================================================================================
+    // SETS & GETS
+    // =============================================================================================
+
+    public String getJson() {
+        return mJson;
+    }
+
+    public void setJson(String mJson) {
+        this.mJson = mJson;
+    }
+
+    public String getName() {
+        return mName;
+    }
+
+    public void setName(String mName) {
+        this.mName = mName;
+    }
+
+    public StationManager getStationManager() {
+        if(mStationManager == null) {
+            mStationManager = new StationManager();
+        }
+        return mStationManager;
+    }
+
+    public void setStationManager(StationManager mStationManager) {
+        this.mStationManager = mStationManager;
+    }
+
+    public int getPosition() {
+        return mPosition;
+    }
+
+    public void setPosition(int mPosition) {
+        this.mPosition = mPosition;
     }
 }
